@@ -2,9 +2,10 @@ require_relative './test_helper'
 
 describe Elastomer::VersionSupport do
   describe "supported versions" do
-    it "allows 2.3.0 to 5.6" do
+    it "allows 2.3.0 to 6.2" do
       two_three_series = ["2.3.0", "2.3.5", "2.4.0", "2.9.9", "2.9.100"]
       five_series = ["5.0.0", "5.0.9", "5.2.0", "5.6.9", "5.6.100"]
+      six_series = ["6.0.0", "6.0.1", "6.1.0", "6.2.4", "6.2.100"]
 
       two_three_series.each do |version|
         assert Elastomer::VersionSupport.new(version).es_version_2_x?
@@ -13,13 +14,17 @@ describe Elastomer::VersionSupport do
       five_series.each do |version|
         assert Elastomer::VersionSupport.new(version).es_version_5_x?
       end
+
+      six_series.each do |version|
+        assert Elastomer::VersionSupport.new(version).es_version_6_x?
+      end
     end
   end
 
   describe "unsupported versions" do
     it "blow up" do
       too_low = ["0.90", "1.0.1", "2.0.0", "2.2.0"]
-      too_high = ["5.7.0", "6.0.0"]
+      too_high = ["5.7.0", "6.3.0"]
 
       (too_low + too_high).each do |version|
         exception = assert_raises(ArgumentError, "expected #{version} to not be supported") do
@@ -65,6 +70,42 @@ describe Elastomer::VersionSupport do
 
   describe "ES 5.x" do
     let(:version_support) { Elastomer::VersionSupport.new("5.6.0") }
+
+    describe "#keyword" do
+      it "returns keyword" do
+        expected = {
+          type: "keyword",
+          store: true
+        }
+        assert_equal(expected, version_support.keyword(store: true))
+      end
+    end
+
+    describe "#text" do
+      it "returns text" do
+        expected = {
+          type: "text",
+          term_vector: "with_positions_offsets"
+        }
+        assert_equal(expected, version_support.text(term_vector: "with_positions_offsets"))
+      end
+    end
+
+    describe "native_delete_by_query?" do
+      it "returns true" do
+        assert version_support.native_delete_by_query?, "ES 5.X has native delete_by_query support"
+      end
+    end
+
+    describe "#op_type_param" do
+      it "converts the supplied params key _op_type to op_type, if present" do
+        assert_equal(version_support.op_type(_op_type: "create"), {op_type: "create"})
+      end
+    end
+  end
+
+  describe "ES 6.x" do
+    let(:version_support) { Elastomer::VersionSupport.new("6.2.0") }
 
     describe "#keyword" do
       it "returns keyword" do

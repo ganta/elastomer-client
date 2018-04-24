@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Usage: script/cibuild-es62
+# CI build script targeting Elasticsearch 6.2
+
+export ES_VERSION=62
+export CI_MODE=true
+
+script/cibuild
